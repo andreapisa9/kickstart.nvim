@@ -1,5 +1,12 @@
 # kickstart.nvim
 
+## My Fork
+Additional required installations:
+- `npm` for the bash language server
+    - Install via brew, apt or any other package installer
+- `jupyter notebook` for running notebooks
+    - Install via pip (`pip install notebook`)
+
 ## Introduction
 
 A starting point for Neovim that is:

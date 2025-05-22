@@ -7,6 +7,12 @@ Additional required installations:
 - `jupyter notebook` for running notebooks
     - Install via pip (`pip install notebook`)
 
+### Using Jupyter Notebooks on remote servers
+1. Install Jupyter Notebook on remote (see previous section)
+2. Run `jupyter notebook --no-browser --port=8080` on remote
+3. Locally, run `ssh -L 8080:localhost:8080 <REMOTE_USER>@<REMOTE_HOST>`
+4. Connect to 'http://localhost:8080' on your browser
+
 ## Introduction
 
 A starting point for Neovim that is:

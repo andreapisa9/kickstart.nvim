@@ -988,10 +988,85 @@ require('lazy').setup({
   },
   {
     'nvim-tree/nvim-tree.lua',
-    opts = {},
+    dependencies = { 'nvim-tree/nvim-web-devicons' },
+    config = function()
+      require('nvim-tree').setup {}
+
+      -- Keybindings
+      vim.keymap.set('n', '<leader>f', '<cmd>NvimTreeToggle<CR>', { desc = 'Toggle file tree' })
+    end,
+  },
+  {
+    'mfussenegger/nvim-dap',
+    lazy = true,
+    -- Copied from LazyVim/lua/lazyvim/plugins/extras/dap/core.lua and
+    -- modified.
+    keys = {
+      {
+        '<leader>db',
+        function()
+          require('dap').toggle_breakpoint()
+        end,
+        desc = 'Toggle Breakpoint',
+      },
+
+      {
+        '<leader>dc',
+        function()
+          require('dap').continue()
+        end,
+        desc = 'Continue',
+      },
+
+      {
+        '<leader>dC',
+        function()
+          require('dap').run_to_cursor()
+        end,
+        desc = 'Run to Cursor',
+      },
+
+      {
+        '<leader>dT',
+        function()
+          require('dap').terminate()
+        end,
+        desc = 'Terminate',
+      },
+    },
+  },
+  {
+    'mfussenegger/nvim-dap-python',
+    lazy = true,
+    config = function()
+      local python = vim.fn.expand '~/.local/share/nvim/mason/packages/debugpy/venv/bin/python'
+      require('dap-python').setup(python)
+    end,
+    -- Consider the mappings at
+    -- https://github.com/mfussenegger/nvim-dap-python?tab=readme-ov-file#mappings
+    dependencies = {
+      'mfussenegger/nvim-dap',
+    },
+  },
+  {
+    'theHamsta/nvim-dap-virtual-text',
+    config = true,
+    dependencies = {
+      'mfussenegger/nvim-dap',
+    },
   },
   {
     'rcarriga/nvim-dap-ui',
+    config = true,
+    keys = {
+      {
+        '<leader>du',
+        function()
+          require('dapui').toggle {}
+        end,
+        desc = 'Toggle DAP UI',
+      },
+    },
     dependencies = {
       'mfussenegger/nvim-dap',
       'nvim-neotest/nvim-nio',

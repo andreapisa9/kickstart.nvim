@@ -91,7 +91,9 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+vim.g.have_nerd_font = true
+vim.g.loaded_netrw = 1
+vim.g.loaded_netrwPlugin = 1
 
 -- [[ Setting options ]]
 -- See `:help vim.o`
@@ -982,6 +984,10 @@ require('lazy').setup({
         char = '│',
       },
     },
+  },
+  {
+    'nvim-tree/nvim-tree.lua',
+    opts = {},
   },
   -- The following comments only work if you have downloaded the kickstart repo, not just copy pasted the
   -- init.lua. If you want these files, they are in the repository, so you can just download them and

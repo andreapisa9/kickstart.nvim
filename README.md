@@ -6,6 +6,8 @@ Additional required installations:
     - Install via brew, apt or any other package installer
 - `jupyter notebook` for running notebooks
     - Install via pip (`pip install notebook`)
+- `luarocks` for luacheck
+    - Install via brew, apt or any other package installer
 
 ### Using Jupyter Notebooks on remote servers
 1. Install Jupyter Notebook on remote (see previous section)

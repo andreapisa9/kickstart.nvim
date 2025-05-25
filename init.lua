@@ -1036,6 +1036,30 @@ require('lazy').setup({
       },
 
       {
+        '<leader>di',
+        function()
+          require('dap').step_into()
+        end,
+        desc = 'Step Into',
+      },
+
+      {
+        '<leader>do',
+        function()
+          require('dap').step_over()
+        end,
+        desc = 'Step Over',
+      },
+
+      {
+        '<leader>dx',
+        function()
+          require('dap').step_out()
+        end,
+        desc = 'Step Out',
+      },
+
+      {
         '<leader>dC',
         function()
           require('dap').run_to_cursor()
@@ -1055,8 +1079,36 @@ require('lazy').setup({
   {
     'mfussenegger/nvim-dap-python',
     lazy = true,
+    ft = 'python',
     config = function()
-      local python = vim.fn.expand '~/.local/share/nvim/mason/packages/debugpy/venv/bin/python'
+      local function setup_conda_dap()
+        vim.ui.input({ prompt = 'Enter Conda environment name: ' }, function(env_name)
+          if not env_name or env_name == '' then
+            print 'No environment name provided.'
+            return
+          end
+
+          -- Determine base path for conda envs
+          local conda_prefix = os.getenv 'CONDA_PREFIX'
+
+          if not conda_prefix or conda_prefix == '' then
+            -- Fallback default location (change if needed)
+            conda_prefix = os.getenv 'HOME' .. '/miniconda3'
+          end
+
+          local python_path = conda_prefix .. '/envs/' .. env_name .. '/bin/python'
+
+          if vim.fn.executable(python_path) == 1 then
+            require('dap-python').setup(python_path)
+            print('✅ DAP initialized with: ' .. python_path)
+          else
+            print('❌ Python not found at: ' .. python_path)
+          end
+        end)
+      end
+
+      --local python = vim.fn.expand '~/.local/share/nvim/mason/packages/debugpy/venv/bin/python'
+      local python = setup_conda_dap()
       require('dap-python').setup(python)
     end,
     -- Consider the mappings at

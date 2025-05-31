@@ -4,6 +4,12 @@
 Additional required installations:
 - `npm` for the bash language server
     - Install via brew, apt or any other package installer
+    - If working on an Ubuntu machine, `npm` will automatically install `node` version 12.22.9, which doesn't work with `bashls`. To solve, you should run the following:
+    ```bash
+    sudo npm install -g n
+    sudo n stable
+    sudo n prune
+    ```
 - `jupyter notebook` for running notebooks
     - Install via pip (`pip install notebook`)
 - `luarocks` for luacheck

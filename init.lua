@@ -1010,7 +1010,7 @@ require('lazy').setup({
       require('nvim-tree').setup {}
 
       -- Keybindings
-      vim.keymap.set('n', '<leader>f', '<cmd>NvimTreeToggle<CR>', { desc = 'Toggle file tree' })
+      vim.keymap.set('n', '<leader>ft', '<cmd>NvimTreeToggle<CR>', { desc = 'Toggle file tree' })
     end,
   },
   {

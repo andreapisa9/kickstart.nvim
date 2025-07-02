@@ -1082,7 +1082,7 @@ require('lazy').setup({
     ft = 'python',
     config = function()
       local function setup_conda_dap()
-        vim.ui.input({ prompt = 'Enter Conda environment name: ' }, function(env_name)
+        vim.ui.input({ prompt = 'Enter Conda or Venv environment name: ' }, function(env_name)
           if not env_name or env_name == '' then
             print 'No environment name provided.'
             return
@@ -1161,7 +1161,7 @@ require('lazy').setup({
   --    This is the easiest way to modularize your config.
   --
   --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
-  -- { import = 'custom.plugins' },
+  { import = 'custom.plugins' },
   --
   -- For additional information with loading, sourcing and examples see `:help lazy.nvim-🔌-plugin-spec`
   -- Or use telescope!

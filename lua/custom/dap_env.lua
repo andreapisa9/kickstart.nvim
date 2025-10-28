@@ -85,22 +85,7 @@ local function get_venv()
   return nil
 end
 
-function M.setup_python_dap()
-  local cached = read_cached_env()
-  if cached and vim.fn.executable(cached) == 1 then
-    require('dap-python').setup(cached)
-    print('✅ Loaded cached DAP Python: ' .. cached)
-    return
-  end
-
-  local auto_path = get_venv() or get_conda_env()
-  if auto_path and vim.fn.executable(auto_path) == 1 then
-    require('dap-python').setup(auto_path)
-    write_cached_env(auto_path)
-    print('✅ Auto-configured DAP Python: ' .. auto_path)
-    return
-  end
-
+function M.set_env()
   vim.ui.select({ 'conda', 'venv' }, { prompt = 'Environment type:' }, function(choice)
     if not choice then
       print '❌ No environment type selected.'
@@ -148,6 +133,23 @@ function M.setup_python_dap()
       end
     end)
   end)
+end
+
+function M.setup_python_dap()
+  local cached = read_cached_env()
+  if cached and vim.fn.executable(cached) == 1 then
+    require('dap-python').setup(cached)
+    print('✅ Loaded cached DAP Python: ' .. cached)
+    return
+  end
+
+  local auto_path = get_venv() or get_conda_env()
+  if auto_path and vim.fn.executable(auto_path) == 1 then
+    require('dap-python').setup(auto_path)
+    write_cached_env(auto_path)
+    print('✅ Auto-configured DAP Python: ' .. auto_path)
+    return
+  end
 end
 
 return M

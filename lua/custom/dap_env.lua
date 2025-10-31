@@ -42,6 +42,25 @@ local function write_cached_env(python_path)
   vim.fn.writefile({ json }, path)
 end
 
+local function change_basedpyright_config(python_path)
+  local clients = vim.lsp.get_clients { name = 'basedpyright' }
+  if #clients == 0 then
+    return
+  end
+
+  for _, client in ipairs(clients) do
+    client.config.settings = client.config.settings or {}
+    client.config.settings.python = client.config.settings.python or {}
+    client.config.settings.python.pythonPath = python_path
+
+    client.notify('workspace/didChangeConfiguration', {
+      settings = client.config.settings,
+    })
+  end
+
+  vim.notify('[basedpyright] Using python: ' .. python_path)
+end
+
 function M.clear_cached_env()
   local path = get_cache_path()
   if file_exists(path) then
@@ -126,7 +145,7 @@ function M.set_env()
 
       if vim.fn.executable(python_path) == 1 then
         require('dap-python').setup(python_path)
-        write_cached_env(python_path)
+        change_basedpyright_config(python_path)
         print('✅ DAP configured with: ' .. python_path)
       else
         print('❌ Python not found at: ' .. python_path)
@@ -139,6 +158,7 @@ function M.setup_python_dap()
   local cached = read_cached_env()
   if cached and vim.fn.executable(cached) == 1 then
     require('dap-python').setup(cached)
+    change_basedpyright_config(cached)
     print('✅ Loaded cached DAP Python: ' .. cached)
     return
   end
@@ -146,6 +166,7 @@ function M.setup_python_dap()
   local auto_path = get_venv() or get_conda_env()
   if auto_path and vim.fn.executable(auto_path) == 1 then
     require('dap-python').setup(auto_path)
+    change_basedpyright_config(auto_path)
     write_cached_env(auto_path)
     print('✅ Auto-configured DAP Python: ' .. auto_path)
     return

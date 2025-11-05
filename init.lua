@@ -1021,17 +1021,17 @@ require('lazy').setup({
   {
     'supermaven-inc/supermaven-nvim',
     config = function()
-      require('supermaven-nvim').setup({
+      require('supermaven-nvim').setup {
         keymaps = {
           accept_suggestion = '<C-y>',
         },
-        condition = function ()
+        condition = function()
           local function choose_weekday()
-            local filename = "selected_weekdays.json"
+            local filename = os.getenv 'HOME' .. '.config/nvim/selected_weekdays.json'
 
             -- map Lua wday (1..7, Sunday=1) to requested scheme (0=Mon .. 6=Sun)
             local function today_weekday_0mon()
-              local w = os.date("*t").wday
+              local w = os.date('*t').wday
               return (w + 5) % 7
             end
 
@@ -1045,8 +1045,8 @@ require('lazy').setup({
 
             -- map day-of-year to bucket 1..52
             local function week_bucket_52()
-              local now = os.date("*t")
-              local yday = now.yday       -- 1..365 or 366
+              local now = os.date '*t'
+              local yday = now.yday -- 1..365 or 366
               local diy = days_in_year(now.year)
               return math.floor((yday - 1) * 52 / diy) + 1
             end
@@ -1054,46 +1054,56 @@ require('lazy').setup({
             -- tiny JSON encoder for an array of integers
             local function encode_json_int_array(t)
               local parts = {}
-              for i = 1, #t do parts[i] = tostring(t[i]) end
-              return "[" .. table.concat(parts, ",") .. "]"
+              for i = 1, #t do
+                parts[i] = tostring(t[i])
+              end
+              return '[' .. table.concat(parts, ',') .. ']'
             end
 
             -- tiny JSON parser for an array of integers like [0,1,2]
             local function decode_json_int_array(s)
-              if type(s) ~= "string" then return nil end
+              if type(s) ~= 'string' then
+                return nil
+              end
               -- strip whitespace
-              s = s:gsub("%s", "")
-              if not s:match("^%[.*%]$") then return nil end
+              s = s:gsub('%s', '')
+              if not s:match '^%[.*%]$' then
+                return nil
+              end
               local inner = s:sub(2, -2)
-              if inner == "" then return {} end
+              if inner == '' then
+                return {}
+              end
               local out = {}
-              for num in inner:gmatch("[^,]+") do
+              for num in inner:gmatch '[^,]+' do
                 local v = tonumber(num)
-                if not v then return nil end
+                if not v then
+                  return nil
+                end
                 out[#out + 1] = v
               end
               return out
             end
 
             -- read file if present
-            local file = io.open(filename, "r")
+            local file = io.open(filename, 'r')
             local weekdays
             if file then
-              local content = file:read("*a")
+              local content = file:read '*a'
               file:close()
               weekdays = decode_json_int_array(content)
             end
 
             -- create file with 52 random weekdays if missing
             if not weekdays then
-              weekdays = nil  -- only create if truly missing
+              weekdays = nil -- only create if truly missing
               if not file then
-                math.randomseed(os.time() + tonumber(tostring({}):match("0x(%x+)"), 16))
+                math.randomseed(os.time() + tonumber(tostring({}):match '0x(%x+)', 16))
                 local tmp = {}
                 for i = 1, 52 do
                   tmp[i] = math.random(0, 6)
                 end
-                local ok, wfile = pcall(io.open, filename, "w")
+                local ok, wfile = pcall(io.open, filename, 'w')
                 if ok and wfile then
                   wfile:write(encode_json_int_array(tmp))
                   wfile:close()
@@ -1105,14 +1115,14 @@ require('lazy').setup({
             end
 
             -- if we still do not have data, we cannot match today
-            if not weekdays or type(weekdays) ~= "table" or #weekdays < 1 then
+            if not weekdays or type(weekdays) ~= 'table' or #weekdays < 1 then
               return false
             end
 
             -- identify this week's bucket and compare
-            local bucket = week_bucket_52()         -- 1..52
-            local selected = weekdays[bucket]       -- integer 0..6
-            local today0 = today_weekday_0mon()     -- integer 0..6
+            local bucket = week_bucket_52() -- 1..52
+            local selected = weekdays[bucket] -- integer 0..6
+            local today0 = today_weekday_0mon() -- integer 0..6
             return selected == today0
           end
 
@@ -1121,7 +1131,7 @@ require('lazy').setup({
           -- print(is_today)
           return choose_weekday()
         end,
-      })
+      }
     end,
   },
   -- The following comments only work if you have downloaded the kickstart repo, not just copy pasted the

@@ -651,8 +651,8 @@ require('lazy').setup({
           format = function(diagnostic)
             local diagnostic_message = {
               [vim.diagnostic.severity.ERROR] = diagnostic.message,
-              [vim.diagnostic.severity.WARN] = diagnostic.message,
-              [vim.diagnostic.severity.INFO] = diagnostic.message,
+              --[vim.diagnostic.severity.WARN] = diagnostic.message,
+              --[vim.diagnostic.severity.INFO] = diagnostic.message,
               [vim.diagnostic.severity.HINT] = diagnostic.message,
             }
             return diagnostic_message[diagnostic.severity]
@@ -703,10 +703,24 @@ require('lazy').setup({
             },
           },
         },
-
-        basedpyright = {},
+        basedpyright = {
+          settings = {
+            basedpyright = {
+              disableOrganizeImports = true,
+              analysis = {
+                autoSearchPaths = true,
+                useLibraryCodeForTypes = true,
+                autoImportCompletion = true,
+                typeCheckingMode = 'off',
+              },
+            },
+            python = {
+              pythonPath = vim.fn.exepath 'python',
+            },
+          }, -- This hook runs automatically before the server attaches to a buffer
+        },
+        ruff = {},
       }
-
       -- Ensure the servers and tools above are installed
       --
       -- To check the current status of installed tools and/or manually install
@@ -734,28 +748,40 @@ require('lazy').setup({
         'luacheck',
         'markdownlint',
         'mdformat',
-        'pylint',
         'basedpyright',
+        'ruff',
+        -- 'basedpyright',
+        --'flake8',
+        --'black',
         'shellcheck',
-        'flake8',
-        'black',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
       require('mason-lspconfig').setup {
         ensure_installed = {}, -- explicitly set to an empty table (Kickstart populates installs via mason-tool-installer)
-        automatic_installation = false,
-        handlers = {
-          function(server_name)
-            local server = servers[server_name] or {}
-            -- This handles overriding only values explicitly passed
-            -- by the server configuration above. Useful when disabling
-            -- certain features of an LSP (for example, turning off formatting for ts_ls)
-            server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
-            require('lspconfig')[server_name].setup(server)
-          end,
-        },
+        -- automatic_installation = false,
+        -- handlers = {
+        --   function(server_name)
+        --     local server = servers[server_name] or {}
+        --     -- This handles overriding only values explicitly passed
+        --     -- by the server configuration above. Useful when disabling
+        --     -- certain features of an LSP (for example, turning off formatting for ts_ls)
+        --     server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
+        --     require('lspconfig')[server_name].setup(server)
+        --   end,
+        -- },
       }
+      for server_name, server_config in pairs(servers) do
+        -- Merge standard capabilities (completions, etc.)
+        server_config.capabilities = vim.tbl_deep_extend('force', capabilities, server_config.capabilities or {})
+
+        -- NATIVE 0.11 CONFIGURATION
+        -- Define the configuration for the server
+        vim.lsp.config(server_name, server_config)
+
+        -- Enable the server (registers filetype listeners automatically)
+        vim.lsp.enable(server_name)
+      end
     end,
   },
 
@@ -791,7 +817,7 @@ require('lazy').setup({
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
-        python = { 'black' },
+        python = { 'ruff' },
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
         --
@@ -1018,122 +1044,122 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>ft', '<cmd>NvimTreeToggle<CR>', { desc = 'Toggle file tree' })
     end,
   },
-  {
-    'supermaven-inc/supermaven-nvim',
-    config = function()
-      require('supermaven-nvim').setup {
-        keymaps = {
-          accept_suggestion = '<C-y>',
-        },
-        condition = function()
-          local function choose_weekday()
-            local filename = os.getenv 'HOME' .. '.config/nvim/selected_weekdays.json'
-
-            -- map Lua wday (1..7, Sunday=1) to requested scheme (0=Mon .. 6=Sun)
-            local function today_weekday_0mon()
-              local w = os.date('*t').wday
-              return (w + 5) % 7
-            end
-
-            -- number of days in current year
-            local function days_in_year(y)
-              if (y % 400 == 0) or ((y % 4 == 0) and (y % 100 ~= 0)) then
-                return 366
-              end
-              return 365
-            end
-
-            -- map day-of-year to bucket 1..52
-            local function week_bucket_52()
-              local now = os.date '*t'
-              local yday = now.yday -- 1..365 or 366
-              local diy = days_in_year(now.year)
-              return math.floor((yday - 1) * 52 / diy) + 1
-            end
-
-            -- tiny JSON encoder for an array of integers
-            local function encode_json_int_array(t)
-              local parts = {}
-              for i = 1, #t do
-                parts[i] = tostring(t[i])
-              end
-              return '[' .. table.concat(parts, ',') .. ']'
-            end
-
-            -- tiny JSON parser for an array of integers like [0,1,2]
-            local function decode_json_int_array(s)
-              if type(s) ~= 'string' then
-                return nil
-              end
-              -- strip whitespace
-              s = s:gsub('%s', '')
-              if not s:match '^%[.*%]$' then
-                return nil
-              end
-              local inner = s:sub(2, -2)
-              if inner == '' then
-                return {}
-              end
-              local out = {}
-              for num in inner:gmatch '[^,]+' do
-                local v = tonumber(num)
-                if not v then
-                  return nil
-                end
-                out[#out + 1] = v
-              end
-              return out
-            end
-
-            -- read file if present
-            local file = io.open(filename, 'r')
-            local weekdays
-            if file then
-              local content = file:read '*a'
-              file:close()
-              weekdays = decode_json_int_array(content)
-            end
-
-            -- create file with 52 random weekdays if missing
-            if not weekdays then
-              weekdays = nil -- only create if truly missing
-              if not file then
-                math.randomseed(os.time() + tonumber(tostring({}):match '0x(%x+)', 16))
-                local tmp = {}
-                for i = 1, 52 do
-                  tmp[i] = math.random(0, 6)
-                end
-                local ok, wfile = pcall(io.open, filename, 'w')
-                if ok and wfile then
-                  wfile:write(encode_json_int_array(tmp))
-                  wfile:close()
-                  weekdays = tmp
-                else
-                  -- could not write, fall through with weekdays=nil
-                end
-              end
-            end
-
-            -- if we still do not have data, we cannot match today
-            if not weekdays or type(weekdays) ~= 'table' or #weekdays < 1 then
-              return false
-            end
-
-            -- identify this week's bucket and compare
-            local bucket = week_bucket_52() -- 1..52
-            local selected = weekdays[bucket] -- integer 0..6
-            local today0 = today_weekday_0mon() -- integer 0..6
-            return selected == today0
-          end
-
-          -- Example:
-          -- local is_today = choose_weekday()
-          -- print(is_today)
-          return choose_weekday()
-        end,
-      }
-    end,
-  },
+  -- {
+  --   'supermaven-inc/supermaven-nvim',
+  --   config = function()
+  --     require('supermaven-nvim').setup {
+  --       keymaps = {
+  --         accept_suggestion = '<C-y>',
+  --       },
+  --       condition = function()
+  --         local function choose_weekday()
+  --           local filename = os.getenv 'HOME' .. '.config/nvim/selected_weekdays.json'
+  --
+  --           -- map Lua wday (1..7, Sunday=1) to requested scheme (0=Mon .. 6=Sun)
+  --           local function today_weekday_0mon()
+  --             local w = os.date('*t').wday
+  --             return (w + 5) % 7
+  --           end
+  --
+  --           -- number of days in current year
+  --           local function days_in_year(y)
+  --             if (y % 400 == 0) or ((y % 4 == 0) and (y % 100 ~= 0)) then
+  --               return 366
+  --             end
+  --             return 365
+  --           end
+  --
+  --           -- map day-of-year to bucket 1..52
+  --           local function week_bucket_52()
+  --             local now = os.date '*t'
+  --             local yday = now.yday -- 1..365 or 366
+  --             local diy = days_in_year(now.year)
+  --             return math.floor((yday - 1) * 52 / diy) + 1
+  --           end
+  --
+  --           -- tiny JSON encoder for an array of integers
+  --           local function encode_json_int_array(t)
+  --             local parts = {}
+  --             for i = 1, #t do
+  --               parts[i] = tostring(t[i])
+  --             end
+  --             return '[' .. table.concat(parts, ',') .. ']'
+  --           end
+  --
+  --           -- tiny JSON parser for an array of integers like [0,1,2]
+  --           local function decode_json_int_array(s)
+  --             if type(s) ~= 'string' then
+  --               return nil
+  --             end
+  --             -- strip whitespace
+  --             s = s:gsub('%s', '')
+  --             if not s:match '^%[.*%]$' then
+  --               return nil
+  --             end
+  --             local inner = s:sub(2, -2)
+  --             if inner == '' then
+  --               return {}
+  --             end
+  --             local out = {}
+  --             for num in inner:gmatch '[^,]+' do
+  --               local v = tonumber(num)
+  --               if not v then
+  --                 return nil
+  --               end
+  --               out[#out + 1] = v
+  --             end
+  --             return out
+  --           end
+  --
+  --           -- read file if present
+  --           local file = io.open(filename, 'r')
+  --           local weekdays
+  --           if file then
+  --             local content = file:read '*a'
+  --             file:close()
+  --             weekdays = decode_json_int_array(content)
+  --           end
+  --
+  --           -- create file with 52 random weekdays if missing
+  --           if not weekdays then
+  --             weekdays = nil -- only create if truly missing
+  --             if not file then
+  --               math.randomseed(os.time() + tonumber(tostring({}):match '0x(%x+)', 16))
+  --               local tmp = {}
+  --               for i = 1, 52 do
+  --                 tmp[i] = math.random(0, 6)
+  --               end
+  --               local ok, wfile = pcall(io.open, filename, 'w')
+  --               if ok and wfile then
+  --                 wfile:write(encode_json_int_array(tmp))
+  --                 wfile:close()
+  --                 weekdays = tmp
+  --               else
+  --                 -- could not write, fall through with weekdays=nil
+  --               end
+  --             end
+  --           end
+  --
+  --           -- if we still do not have data, we cannot match today
+  --           if not weekdays or type(weekdays) ~= 'table' or #weekdays < 1 then
+  --             return false
+  --           end
+  --
+  --           -- identify this week's bucket and compare
+  --           local bucket = week_bucket_52() -- 1..52
+  --           local selected = weekdays[bucket] -- integer 0..6
+  --           local today0 = today_weekday_0mon() -- integer 0..6
+  --           return selected == today0
+  --         end
+  --
+  --         -- Example:
+  --         -- local is_today = choose_weekday()
+  --         -- print(is_today)
+  --         return choose_weekday()
+  --       end,
+  --     }
+  --   end,
+  -- },
   {
     'ziglang/zig.vim',
     ft = 'zig',

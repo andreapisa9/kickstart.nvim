@@ -173,4 +173,21 @@ function M.setup_python_dap()
   end
 end
 
+function M.setup_python_lsp()
+  local cached = read_cached_env()
+  if cached and vim.fn.executable(cached) == 1 then
+    change_basedpyright_config(cached)
+    print('✅ Loaded cached Python: ' .. cached)
+    return
+  end
+
+  local auto_path = get_venv() or get_conda_env()
+  if auto_path and vim.fn.executable(auto_path) == 1 then
+    change_basedpyright_config(auto_path)
+    write_cached_env(auto_path)
+    print('✅ Auto-configured Python: ' .. auto_path)
+    return
+  end
+end
+
 return M

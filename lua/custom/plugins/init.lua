@@ -16,19 +16,14 @@ return {
         require('custom.dap_env').clear_cached_env()
       end, { desc = 'Clear cached DAP Python environment for this project' })
 
-      vim.keymap.set('n', '<leader>dr', function()
-        require('custom.dap_env').clear_cached_env()
-      end, { desc = 'Reset cached Python env for DAP' })
+      vim.keymap.set('n', '<leader>dr', ':DapPythonResetEnv<CR>', { desc = 'Reset cached Python env for DAP' })
 
       vim.api.nvim_create_user_command('DapPythonSetEnv', function()
         require('custom.dap_env').clear_cached_env()
         require('custom.dap_env').set_env()
       end, { desc = 'Set DAP Python environment for this project' })
 
-      vim.keymap.set('n', '<leader>ds', function()
-        require('custom.dap_env').clear_cached_env()
-        require('custom.dap_env').set_env()
-      end, { desc = 'Set Python env for DAP' })
+      vim.keymap.set('n', '<leader>ds', ':DapPythonSetEnv<CR>', { desc = 'Set Python env for DAP' })
     end,
   },
 }

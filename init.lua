@@ -711,7 +711,7 @@ require('lazy').setup({
                 autoSearchPaths = true,
                 useLibraryCodeForTypes = true,
                 autoImportCompletion = true,
-                typeCheckingMode = 'off',
+                typeCheckingMode = 'recommended',
               },
             },
             python = {

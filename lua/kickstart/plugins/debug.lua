@@ -25,6 +25,7 @@ return {
 
       -- Add your own debuggers here
       'leoluz/nvim-dap-go',
+      'mfussenegger/nvim-dap-python',
     },
     keys = {
       -- Basic debugging keymaps, feel free to change to your liking!
@@ -97,6 +98,7 @@ return {
         ensure_installed = {
           -- Update this to ensure that you have the debuggers for the langs you want
           'delve',
+          'debugpy',
         },
       }
 
@@ -146,6 +148,52 @@ return {
           detached = vim.fn.has 'win32' == 0,
         },
       }
+      -- Install python specific config
+      require('dap-python').setup 'debugpy-adapter'
+      -- Loop through all default python configs (File, Module, etc.)
+      for _, config in ipairs(dap.configurations.python or {}) do
+        -- Force PYTHONPATH to include the current root (cwd)
+        config.env = function()
+          return {
+            PYTHONPATH = vim.fn.getcwd() .. ':' .. (vim.env.PYTHONPATH or ''),
+          }
+        end
+      end
     end,
   },
+  -- {
+  --   'mfussenegger/nvim-dap-python',
+  --   ft = 'python',
+  --   dependencies = {
+  --     'mfussenegger/nvim-dap',
+  --   },
+  --   config = function()
+  --     require('dap-python').setup 'debugpy-adapter'
+  --     -- table.insert(require('dap').configurations.python, {
+  --     --   type = 'python',
+  --     --   request = 'launch',
+  --     --   name = 'Launch: correct_cwd',
+  --     --   program = '${file}',
+  --     --   cwd = '${workspaceFolder}',
+  --     --   console = 'integratedTerminal',
+  --     -- })
+  --     -- -- require('dap-python').setup 'debugpy-adapter'
+  --     -- table.insert(require('dap').configurations.python, {
+  --     --   type = 'python',
+  --     --   request = 'launch',
+  --     --   name = 'Launch: args+correct_cwd',
+  --     --   program = '${file}',
+  --     --   cwd = '${workspaceFolder}',
+  --     --   console = 'integratedTerminal',
+  --     --   args = function()
+  --     --     local args_string = vim.fn.input 'Arguments: '
+  --     --     local utils = require 'dap.utils'
+  --     --     if utils.splitstr and vim.fn.has 'nvim-0.10' == 1 then
+  --     --       return utils.splitstr(args_string)
+  --     --     end
+  --     --     return vim.split(args_string, ' +')
+  --     --   end,
+  --     -- })
+  --   end,
+  -- },
 }

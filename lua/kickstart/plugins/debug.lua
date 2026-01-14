@@ -159,6 +159,14 @@ return {
           }
         end
       end
+      table.insert(require('dap').configurations.python, {
+        type = 'python',
+        request = 'launch',
+        name = 'file: also crawl imported modules',
+        program = '${file}',
+        justMyCode = false,
+        console = 'integratedTerminal',
+      })
     end,
   },
   -- {

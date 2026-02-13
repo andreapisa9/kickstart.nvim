@@ -805,8 +805,6 @@ require('lazy').setup({
         'mdformat',
         'basedpyright',
         'ruff',
-        --'flake8',
-        --'black',
         'shellcheck',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
@@ -871,7 +869,7 @@ require('lazy').setup({
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
-        python = { 'ruff' },
+        python = { 'ruff_fix', 'ruff_organize_imports', 'ruff_format' },
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
         --

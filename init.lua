@@ -1096,122 +1096,60 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>ft', '<cmd>NvimTreeToggle<CR>', { desc = 'Toggle file tree' })
     end,
   },
-  -- {
-  --   'supermaven-inc/supermaven-nvim',
-  --   config = function()
-  --     require('supermaven-nvim').setup {
-  --       keymaps = {
-  --         accept_suggestion = '<C-y>',
-  --       },
-  --       condition = function()
-  --         local function choose_weekday()
-  --           local filename = os.getenv 'HOME' .. '.config/nvim/selected_weekdays.json'
-  --
-  --           -- map Lua wday (1..7, Sunday=1) to requested scheme (0=Mon .. 6=Sun)
-  --           local function today_weekday_0mon()
-  --             local w = os.date('*t').wday
-  --             return (w + 5) % 7
-  --           end
-  --
-  --           -- number of days in current year
-  --           local function days_in_year(y)
-  --             if (y % 400 == 0) or ((y % 4 == 0) and (y % 100 ~= 0)) then
-  --               return 366
-  --             end
-  --             return 365
-  --           end
-  --
-  --           -- map day-of-year to bucket 1..52
-  --           local function week_bucket_52()
-  --             local now = os.date '*t'
-  --             local yday = now.yday -- 1..365 or 366
-  --             local diy = days_in_year(now.year)
-  --             return math.floor((yday - 1) * 52 / diy) + 1
-  --           end
-  --
-  --           -- tiny JSON encoder for an array of integers
-  --           local function encode_json_int_array(t)
-  --             local parts = {}
-  --             for i = 1, #t do
-  --               parts[i] = tostring(t[i])
-  --             end
-  --             return '[' .. table.concat(parts, ',') .. ']'
-  --           end
-  --
-  --           -- tiny JSON parser for an array of integers like [0,1,2]
-  --           local function decode_json_int_array(s)
-  --             if type(s) ~= 'string' then
-  --               return nil
-  --             end
-  --             -- strip whitespace
-  --             s = s:gsub('%s', '')
-  --             if not s:match '^%[.*%]$' then
-  --               return nil
-  --             end
-  --             local inner = s:sub(2, -2)
-  --             if inner == '' then
-  --               return {}
-  --             end
-  --             local out = {}
-  --             for num in inner:gmatch '[^,]+' do
-  --               local v = tonumber(num)
-  --               if not v then
-  --                 return nil
-  --               end
-  --               out[#out + 1] = v
-  --             end
-  --             return out
-  --           end
-  --
-  --           -- read file if present
-  --           local file = io.open(filename, 'r')
-  --           local weekdays
-  --           if file then
-  --             local content = file:read '*a'
-  --             file:close()
-  --             weekdays = decode_json_int_array(content)
-  --           end
-  --
-  --           -- create file with 52 random weekdays if missing
-  --           if not weekdays then
-  --             weekdays = nil -- only create if truly missing
-  --             if not file then
-  --               math.randomseed(os.time() + tonumber(tostring({}):match '0x(%x+)', 16))
-  --               local tmp = {}
-  --               for i = 1, 52 do
-  --                 tmp[i] = math.random(0, 6)
-  --               end
-  --               local ok, wfile = pcall(io.open, filename, 'w')
-  --               if ok and wfile then
-  --                 wfile:write(encode_json_int_array(tmp))
-  --                 wfile:close()
-  --                 weekdays = tmp
-  --               else
-  --                 -- could not write, fall through with weekdays=nil
-  --               end
-  --             end
-  --           end
-  --
-  --           -- if we still do not have data, we cannot match today
-  --           if not weekdays or type(weekdays) ~= 'table' or #weekdays < 1 then
-  --             return false
-  --           end
-  --
-  --           -- identify this week's bucket and compare
-  --           local bucket = week_bucket_52() -- 1..52
-  --           local selected = weekdays[bucket] -- integer 0..6
-  --           local today0 = today_weekday_0mon() -- integer 0..6
-  --           return selected == today0
-  --         end
-  --
-  --         -- Example:
-  --         -- local is_today = choose_weekday()
-  --         -- print(is_today)
-  --         return choose_weekday()
-  --       end,
-  --     }
-  --   end,
-  -- },
+  {
+    'olimorris/codecompanion.nvim',
+    dependencies = {
+      'nvim-lua/plenary.nvim',
+      'nvim-treesitter/nvim-treesitter',
+      'saghen/blink.cmp',
+    },
+    cmd = {
+      'CodeCompanion',
+      'CodeCompanionActions',
+      'CodeCompanionChat',
+      'CodeCompanionCmd',
+    },
+    keys = {
+      { '<leader>ca', '<cmd>CodeCompanionActions<cr>', mode = { 'n', 'v' }, desc = 'AI Actions' },
+      { '<leader>cc', '<cmd>CodeCompanionChat<cr>', mode = { 'n', 'v' }, desc = 'AI Chat (DeepSeek)' },
+      { '<leader>ci', '<cmd>CodeCompanion', mode = { 'n', 'v' }, desc = 'AI Prompt Inline' },
+    },
+    config = function()
+      require('codecompanion').setup {
+        strategies = {
+          chat = { adapter = 'deepseek_chat' },
+          inline = { adapter = 'qwen_inline' },
+        },
+        adapters = {
+          http = {
+            deepseek_chat = function()
+              return require('codecompanion.adapters').extend('ollama', {
+                name = 'deepseek_chat',
+                schema = {
+                  model = { default = 'deepseek-r1:8b' },
+                  num_ctx = { default = 32768 },
+                },
+              })
+            end,
+            qwen_inline = function()
+              return require('codecompanion.adapters').extend('ollama', {
+                name = 'qwen_inline',
+                schema = {
+                  model = { default = 'qwen2.5-coder:1.5b-base' },
+                  num_ctx = { default = 2048 },
+                },
+              })
+            end,
+          },
+        },
+        display = {
+          chat = {
+            window = { layout = 'vertical', width = 0.35 },
+          },
+        },
+      }
+    end,
+  },
   {
     'ziglang/zig.vim',
     ft = 'zig',

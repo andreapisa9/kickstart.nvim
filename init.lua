@@ -1112,7 +1112,7 @@ require('lazy').setup({
     keys = {
       { '<leader>ca', '<cmd>CodeCompanionActions<cr>', mode = { 'n', 'v' }, desc = 'AI Actions' },
       { '<leader>cc', '<cmd>CodeCompanionChat<cr>', mode = { 'n', 'v' }, desc = 'AI Chat (DeepSeek)' },
-      { '<leader>ci', '<cmd>CodeCompanion', mode = { 'n', 'v' }, desc = 'AI Prompt Inline' },
+      { '<leader>ci', '<cmd>CodeCompanion<cr>', mode = { 'n', 'v' }, desc = 'AI Prompt Inline' },
     },
     config = function()
       require('codecompanion').setup {

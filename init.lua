@@ -1111,7 +1111,7 @@ require('lazy').setup({
     },
     keys = {
       { '<leader>ca', '<cmd>CodeCompanionActions<cr>', mode = { 'n', 'v' }, desc = 'AI Actions' },
-      { '<leader>cc', '<cmd>CodeCompanionChat<cr>', mode = { 'n', 'v' }, desc = 'AI Chat (DeepSeek)' },
+      { '<leader>cc', '<cmd>CodeCompanionChat Toggle<cr>', mode = { 'n', 'v' }, desc = 'AI Chat (DeepSeek)' },
       { '<leader>ci', '<cmd>CodeCompanion<cr>', mode = { 'n', 'v' }, desc = 'AI Prompt Inline' },
     },
     config = function()
@@ -1135,7 +1135,7 @@ require('lazy').setup({
               return require('codecompanion.adapters').extend('ollama', {
                 name = 'qwen_inline',
                 schema = {
-                  model = { default = 'qwen2.5-coder:1.5b-base' },
+                  model = { default = 'qwen2.5-coder:1.5b-instruct' },
                   num_ctx = { default = 2048 },
                 },
               })

@@ -953,6 +953,8 @@ require('lazy').setup({
         -- By default, you may press `<c-space>` to show the documentation.
         -- Optionally, set `auto_show = true` to show the documentation after a delay.
         documentation = { auto_show = false, auto_show_delay_ms = 500 },
+        menu = { auto_show = true },
+        ghost_text = { enabled = true },
       },
 
       sources = {
@@ -1145,6 +1147,46 @@ require('lazy').setup({
         display = {
           chat = {
             window = { layout = 'vertical', width = 0.35 },
+          },
+        },
+      }
+    end,
+  },
+  {
+    'milanglacier/minuet-ai.nvim',
+    config = function()
+      require('minuet').setup {
+        notify = 'debug',
+        provider = 'openai_fim_compatible',
+        n_completions = 1,
+        context_window = 512,
+        provider_options = {
+          openai_fim_compatible = {
+            api_key = 'TERM',
+            name = 'Ollama',
+            end_point = 'http://localhost:11434/v1/completions',
+            model = 'qwen2.5-coder:1.5b-instruct',
+            optional = {
+              max_tokens = 128,
+              top_p = 0.9,
+            },
+          },
+        },
+        virtual_text = {
+          auto_trigger_ft = { '*' },
+          keymap = {
+            -- Accept whole completion
+            accept = '<A-A>',
+            -- Accept single line
+            accept_line = '<A-a>',
+            -- Accept n lines (prompt for number)
+            -- e.g. "<A-z> 2 <cr>" will accept 2 lines
+            accept_n_lines = '<A-z>',
+            -- Cycle to prev completion item, or manually invoke completion
+            prev = '<A-[>',
+            -- Cycle to next completion item, or manually invoke completion
+            next = '<A-]>',
+            dismiss = '<A-r>',
           },
         },
       }

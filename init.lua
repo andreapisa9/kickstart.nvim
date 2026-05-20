@@ -1,5 +1,7 @@
---[[
+-- Hello
 
+--[[
+ 
 =====================================================================
 ==================== READ THIS BEFORE CONTINUING ====================
 =====================================================================
@@ -228,7 +230,7 @@ _G.ensure_llama_server = function(port, name, cmd_args)
     env = { LLAMA_CACHE = vim.fn.expand '$HOME/.config/llamacpp/models' },
   })
 
-  local server_ready = vim.wait(15000, function()
+  local server_ready = vim.wait(90000, function()
     vim.fn.system(check_cmd)
     return vim.v.shell_error == 0
   end, 500, false)
@@ -1151,10 +1153,12 @@ require('lazy').setup({
     },
     config = function()
       _G.ensure_llama_server(10001, 'CodeCompanion Chat', {
-        '-m',
-        '$HOME/.config/llamacpp/models/DeepSeek-R1-Distill-Qwen-7B-Q8.gguf',
+        '--hf-repo',
+        'unsloth/Qwen3.5-9B-GGUF',
+        '--hf-file',
+        'Qwen3.5-9B-Q4_K_M.gguf',
         '-c',
-        '32768',
+        '65536',
         '-ngl',
         '99',
         '-ctk',
@@ -1174,33 +1178,11 @@ require('lazy').setup({
       })
       require('codecompanion').setup {
         strategies = {
-          chat = { adapter = 'deepseek_chat' },
+          chat = { adapter = 'opencode' },
           inline = { adapter = 'qwen_inline' },
         },
         adapters = {
           http = {
-            ['deepseek_chat'] = function()
-              return require('codecompanion.adapters').extend('openai_compatible', {
-                name = 'deepseek_chat',
-                env = {
-                  url = 'http://127.0.0.1:10001',
-                  api_key = 'TERM',
-                  chat_url = '/v1/chat/completions',
-                },
-                handlers = {
-                  parse_message_meta = function(self, data)
-                    local extra = data.extra
-                    if extra and extra.reasoning_content then
-                      data.output.reasoning = { content = extra.reasoning_content }
-                      if data.output.content == '' then
-                        data.output.content = nil
-                      end
-                    end
-                    return data
-                  end,
-                },
-              })
-            end,
             ['qwen_inline'] = function()
               return require('codecompanion.adapters').extend('openai_compatible', {
                 name = 'qwen_inline',
@@ -1208,6 +1190,17 @@ require('lazy').setup({
                   url = 'http://127.0.0.1:10002',
                   api_key = 'TERM',
                   chat_url = '/v1/chat/completions',
+                },
+              })
+            end,
+          },
+          acp = {
+            opencode = function()
+              return require('codecompanion.adapters').extend('opencode', {
+                name = 'opencode',
+                env = {
+                  OPENAI_API_BASE = 'http://127.0.0.1:10001/v1',
+                  OPENAI_API_KEY = 'dummy_key',
                 },
               })
             end,

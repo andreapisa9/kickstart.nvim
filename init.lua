@@ -207,6 +207,39 @@ vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper win
 -- vim.keymap.set("n", "<C-S-j>", "<C-w>J", { desc = "Move window to the lower" })
 -- vim.keymap.set("n", "<C-S-k>", "<C-w>K", { desc = "Move window to the upper" })
 
+-- Function to launch llama-server for AI plugins (CodeCompanion)
+_G.ensure_llama_server = function(port, name, cmd_args)
+  local health_url = string.format('http://127.0.0.1:%d/health', port)
+  local check_cmd = string.format('curl -s -f %s > /dev/null', health_url)
+
+  if vim.fn.system(check_cmd) and vim.v.shell_error == 0 then
+    return
+  end
+
+  vim.notify('Booting ' .. name .. ' server on: ' .. port .. '...', vim.log.levels.INFO)
+
+  local full_cmd = { 'llama-server', '--port', tostring(port) }
+  for _, arg in ipairs(cmd_args) do
+    table.insert(full_cmd, arg)
+  end
+
+  vim.fn.jobstart(full_cmd, {
+    detach = true,
+    env = { LLAMA_CACHE = vim.fn.expand '$HOME/.config/llamacpp/models' },
+  })
+
+  local server_ready = vim.wait(15000, function()
+    vim.fn.system(check_cmd)
+    return vim.v.shell_error == 0
+  end, 500, false)
+
+  if server_ready then
+    vim.notify('✅ ' .. name .. ' is loaded and ready!', vim.log.levels.INFO)
+  else
+    vim.notify('❌ ' .. name .. ' timed out during boot.', vim.log.levels.ERROR)
+  end
+end
+
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
 
@@ -1117,6 +1150,28 @@ require('lazy').setup({
       { '<leader>ci', '<cmd>CodeCompanion<cr>', mode = { 'n', 'v' }, desc = 'AI Prompt Inline' },
     },
     config = function()
+      _G.ensure_llama_server(10001, 'CodeCompanion Chat', {
+        '-m',
+        '$HOME/.config/llamacpp/models/DeepSeek-R1-Distill-Qwen-7B-Q8.gguf',
+        '-c',
+        '32768',
+        '-ngl',
+        '99',
+        '-ctk',
+        'q8_0',
+      })
+      _G.ensure_llama_server(10002, 'CodeCompanion Inline', {
+        '--hf-repo',
+        'Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF',
+        '--hf-file',
+        'qwen2.5-coder-1.5b-instruct-q4_k_m.gguf',
+        '-c',
+        '2048',
+        '-ngl',
+        '99',
+        '-ctk',
+        'q8_0',
+      })
       require('codecompanion').setup {
         strategies = {
           chat = { adapter = 'deepseek_chat' },
@@ -1124,21 +1179,35 @@ require('lazy').setup({
         },
         adapters = {
           http = {
-            deepseek_chat = function()
-              return require('codecompanion.adapters').extend('ollama', {
+            ['deepseek_chat'] = function()
+              return require('codecompanion.adapters').extend('openai_compatible', {
                 name = 'deepseek_chat',
-                schema = {
-                  model = { default = 'deepseek-r1:8b' },
-                  num_ctx = { default = 32768 },
+                env = {
+                  url = 'http://127.0.0.1:10001',
+                  api_key = 'TERM',
+                  chat_url = '/v1/chat/completions',
+                },
+                handlers = {
+                  parse_message_meta = function(self, data)
+                    local extra = data.extra
+                    if extra and extra.reasoning_content then
+                      data.output.reasoning = { content = extra.reasoning_content }
+                      if data.output.content == '' then
+                        data.output.content = nil
+                      end
+                    end
+                    return data
+                  end,
                 },
               })
             end,
-            qwen_inline = function()
-              return require('codecompanion.adapters').extend('ollama', {
+            ['qwen_inline'] = function()
+              return require('codecompanion.adapters').extend('openai_compatible', {
                 name = 'qwen_inline',
-                schema = {
-                  model = { default = 'qwen2.5-coder:1.5b-instruct' },
-                  num_ctx = { default = 2048 },
+                env = {
+                  url = 'http://127.0.0.1:10002',
+                  api_key = 'TERM',
+                  chat_url = '/v1/chat/completions',
                 },
               })
             end,
@@ -1149,49 +1218,77 @@ require('lazy').setup({
             window = { layout = 'vertical', width = 0.35 },
           },
         },
-      }
-    end,
-  },
-  {
-    'milanglacier/minuet-ai.nvim',
-    config = function()
-      require('minuet').setup {
-        notify = 'debug',
-        provider = 'openai_fim_compatible',
-        n_completions = 1,
-        context_window = 512,
-        provider_options = {
-          openai_fim_compatible = {
-            api_key = 'TERM',
-            name = 'Ollama',
-            end_point = 'http://localhost:11434/v1/completions',
-            model = 'qwen2.5-coder:1.5b-instruct',
-            optional = {
-              max_tokens = 128,
-              top_p = 0.9,
+        interactions = {
+          chat = {
+            opts = {
+              context_management = {
+                trigger = 0.8,
+              },
             },
           },
         },
-        virtual_text = {
-          auto_trigger_ft = { '*' },
-          keymap = {
-            -- Accept whole completion
-            accept = '<A-A>',
-            -- Accept single line
-            accept_line = '<A-a>',
-            -- Accept n lines (prompt for number)
-            -- e.g. "<A-z> 2 <cr>" will accept 2 lines
-            accept_n_lines = '<A-z>',
-            -- Cycle to prev completion item, or manually invoke completion
-            prev = '<A-[>',
-            -- Cycle to next completion item, or manually invoke completion
-            next = '<A-]>',
-            dismiss = '<A-r>',
-          },
-        },
       }
     end,
   },
+  -- {
+  --   'milanglacier/minuet-ai.nvim',
+  --   event = 'InsertEnter',
+  --   config = function()
+  --     _G.ensure_llama_server(10002, 'Minuet FIM', {
+  --       '--hf-repo',
+  --       'Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF',
+  --       '--hf-file',
+  --       'qwen2.5-coder-1.5b-instruct-q4_k_m.gguf',
+  --       '-c',
+  --       '2048',
+  --       '-ngl',
+  --       '99',
+  --       '-ctk',
+  --       'q8_0',
+  --     })
+  --     require('minuet').setup {
+  --       notify = 'debug',
+  --       provider = 'openai_fim_compatible',
+  --       n_completions = 1,
+  --       context_window = 512,
+  --       provider_options = {
+  --         openai_fim_compatible = {
+  --           api_key = 'TERM',
+  --           name = 'llama.cpp',
+  --           end_point = 'http://localhost:10002/v1/completions',
+  --           model = 'local-model',
+  --           optional = {
+  --             max_tokens = 128,
+  --             top_p = 0.9,
+  --           },
+  --           template = {
+  --             prompt = function(context_before_cursor, context_after_cursor, _)
+  --               return '<|fim_prefix|>' .. context_before_cursor .. '<|fim_suffix|>' .. context_after_cursor .. '<|fim_middle|>'
+  --             end,
+  --             suffix = false,
+  --           },
+  --         },
+  --       },
+  --       virtual_text = {
+  --         auto_trigger_ft = {},
+  --         keymap = {
+  --           -- Accept whole completion
+  --           accept = '<C-A>',
+  --           -- Accept single line
+  --           accept_line = '<C-a>',
+  --           -- Accept n lines (prompt for number)
+  --           -- e.g. "<A-z> 2 <cr>" will accept 2 lines
+  --           accept_n_lines = '<C-z>',
+  --           -- Cycle to prev completion item, or manually invoke completion
+  --           prev = '<C-[>',
+  --           -- Cycle to next completion item, or manually invoke completion
+  --           next = '<C-]>',
+  --           dismiss = '<C-n>',
+  --         },
+  --       },
+  --     }
+  --   end,
+  -- },
   {
     'ziglang/zig.vim',
     ft = 'zig',

@@ -1152,7 +1152,7 @@ require('lazy').setup({
       { '<leader>ci', '<cmd>CodeCompanion<cr>', mode = { 'n', 'v' }, desc = 'AI Prompt Inline' },
     },
     config = function()
-      _G.ensure_llama_server(10001, 'CodeCompanion Chat', {
+      _G.ensure_llama_server(10000, 'CodeCompanion Chat', {
         '--hf-repo',
         'unsloth/Qwen3.5-9B-GGUF',
         '--hf-file',
@@ -1164,7 +1164,7 @@ require('lazy').setup({
         '-ctk',
         'q8_0',
       })
-      _G.ensure_llama_server(10002, 'CodeCompanion Inline', {
+      _G.ensure_llama_server(10001, 'CodeCompanion Inline', {
         '--hf-repo',
         'Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF',
         '--hf-file',
@@ -1187,7 +1187,7 @@ require('lazy').setup({
               return require('codecompanion.adapters').extend('openai_compatible', {
                 name = 'qwen_inline',
                 env = {
-                  url = 'http://127.0.0.1:10002',
+                  url = 'http://127.0.0.1:10001',
                   api_key = 'TERM',
                   chat_url = '/v1/chat/completions',
                 },
@@ -1199,7 +1199,7 @@ require('lazy').setup({
               return require('codecompanion.adapters').extend('opencode', {
                 name = 'opencode',
                 env = {
-                  OPENAI_API_BASE = 'http://127.0.0.1:10001/v1',
+                  OPENAI_API_BASE = 'http://127.0.0.1:10000/v1',
                   OPENAI_API_KEY = 'dummy_key',
                 },
               })

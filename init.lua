@@ -809,7 +809,6 @@ require('lazy').setup({
             },
           }, -- This hook runs automatically before the server attaches to a buffer
         },
-        ruff = {},
       }
       -- Ensure the servers and tools above are installed
       --
@@ -858,6 +857,18 @@ require('lazy').setup({
         --   end,
         -- },
       }
+
+      -- Add dart language server if dart command is found (i.e. dart is installed)
+      local dart = vim.fn.exepath 'dart'
+
+      if dart ~= '' then
+        servers.dartls = {
+          cmd = { dart, 'language-server', '--protocol=lsp' },
+          filetypes = {'dart'},
+          root_markers = {'pubspec.yaml', '.git'},
+        }
+      end
+
       for server_name, server_config in pairs(servers) do
         -- Merge standard capabilities (completions, etc.)
         server_config.capabilities = vim.tbl_deep_extend('force', capabilities, server_config.capabilities or {})
